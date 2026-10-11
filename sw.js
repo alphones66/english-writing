@@ -1,4 +1,4 @@
-const CACHE = 'english-writing-v1';
+const CACHE = 'english-writing-v2';
 const FILES = [
   './',
   'index.html',
@@ -7,9 +7,9 @@ const FILES = [
   'gept-examples.js',
   'gept-emoji.js',
   'music.js',
-  'app-icon-180.png',
-  'app-icon-192.png',
-  'app-icon-512.png'
+  'english-icon-180.png',
+  'english-icon-192.png',
+  'english-icon-512.png'
 ];
 
 self.addEventListener('install', event => {
