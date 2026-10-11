@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>英文寫字</title>
+
+  <link rel="manifest" href="english-manifest.json">
+  <meta name="theme-color" content="#f8c9b0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="英文寫字">
+  <link rel="apple-touch-icon" href="app-icon-180.png">
+  <link rel="icon" href="app-icon-192.png">
+
+  <style>
+    :root { --orange: #f06a1f; --ink: #3a2a1a; --soft: #fdf1e6; --green: #4caf50; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: #fbeee4; color: var(--ink); min-height: 100vh;
+      user-select: none; -webkit-user-select: none;
+      padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    button { font-family: inherit; cursor: pointer; }
+
+    header {
+      position: sticky; top: 0; z-index: 10; background: #f8c9b0;
+      padding: calc(env(safe-area-inset-top) + 14px) 84px 12px; box-shadow: 0 2px 6px rgba(0,0,0,.12);
+    }
+    .home {
+      position: absolute; left: 16px; top: calc(env(safe-area-inset-top) + 10px);
+      width: 56px; height: 56px; border-radius: 50%; border: 4px solid #fff; background: var(--orange);
+      display: flex; align-items: center; justify-content: center; font-size: 26px; text-decoration: none;
+      box-shadow: 0 3px 6px rgba(0,0,0,.25);
+    }
+    h1 { margin: 0; text-align: center; font-size: 28px; }
+
+    main { max-width: 900px; margin: 0 auto; padding: 16px 16px 60px; }
+    section.card { background: #fff; border-radius: 20px; padding: 16px; margin-top: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+    section h2 { margin: 0 0 10px; font-size: 24px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+    .seg { display: inline-flex; border: 3px solid var(--orange); border-radius: 999px; overflow: hidden; }
+    .seg button { font-size: 20px; padding: 8px 20px; border: 0; background: #fff; color: var(--orange); font-weight: bold; }
+    .seg button.on { background: var(--orange); color: #fff; }
+
+    /* 字母選單 */
+    .letters { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; }
+    .letters button { position: relative; border: 3px solid #f3d3bd; border-radius: 14px; background: #fffdf8; padding: 4px; }
+    .letters button:active { transform: scale(.96); }
+    .letters svg { width: 100%; height: auto; display: block; }
+    .letters .star { position: absolute; right: 4px; top: 2px; font-size: 18px; }
+
+    .quiz-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+    .big { font-size: 22px; padding: 16px 14px; border-radius: 18px; border: 0; background: var(--orange); color: #fff; font-weight: bold;
+      box-shadow: 0 5px 0 #c84f15; min-height: 64px; }
+    .big:active { transform: translateY(4px); box-shadow: 0 1px 0 #c84f15; }
+    .big.green { background: var(--green); box-shadow: 0 5px 0 #2e7d32; }
+    .big.white { background: #fff; color: var(--orange); border: 3px solid var(--orange); box-shadow: 0 5px 0 #f3c1a4; }
+    .big:disabled { opacity: .4; }
+
+    /* 練習畫面 */
+    .steps { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .steps span { font-size: 19px; padding: 6px 14px; border-radius: 999px; background: #eee; color: #999; font-weight: bold; }
+    .steps span.on { background: var(--orange); color: #fff; }
+    .steps span.ok { background: #c8e6c9; color: #2e7d32; }
+    .say { text-align: center; font-size: 26px; font-weight: bold; min-height: 40px; margin: 4px 0 10px; }
+    .prompt { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+    .prompt svg { height: 150px; width: auto; background: #fffdf8; border-radius: 14px; border: 3px solid #f3d3bd; }
+    .board-wrap { display: flex; justify-content: center; }
+    .board { width: 100%; max-width: 620px; height: auto; background: #fffdf8; border-radius: 18px; border: 4px solid #f3d3bd; touch-action: none; display: block; }
+    .actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+    .actions .big { min-width: 150px; }
+    .progress { text-align: center; font-size: 20px; color: #8a6d57; margin-bottom: 6px; }
+    .result { text-align: center; font-size: 30px; font-weight: bold; margin: 20px 0; line-height: 1.6; }
+    .result .stars { font-size: 44px; }
+
+    /* 單字 */
+    .tabs { display: flex; justify-content: center; margin-top: 4px; }
+    .groups { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .groups button { width: 50px; height: 50px; border-radius: 12px; border: 3px solid #f3d3bd; background: #fffdf8; padding: 2px; }
+    .groups button.on { border-color: var(--orange); background: #ffe2c9; }
+    .groups svg { width: 100%; height: 100%; }
+    .filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .filter button { font-size: 18px; padding: 6px 14px; border-radius: 999px; border: 2px solid var(--orange); background: #fff; color: var(--orange); }
+    .filter button.on { background: var(--orange); color: #fff; }
+    .test6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media (max-width: 700px) { .test6 { grid-template-columns: 1fr 1fr; } }
+    .wlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+    .wlist button { border: 3px solid #f3d3bd; border-radius: 14px; background: #fffdf8; padding: 6px 8px; text-align: left; position: relative; color: var(--ink); }
+    .wlist svg { height: 56px; width: auto; max-width: 100%; display: block; }
+    .wlist .zh { font-size: 16px; color: #6b4e36; display: block; margin-top: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .wlist .mark { position: absolute; right: 6px; top: 4px; font-size: 18px; }
+    .wordview { display: flex; justify-content: center; overflow-x: auto; }
+    .wordview svg { height: 130px; width: auto; max-width: 100%; background: #fffdf8; border-radius: 14px; border: 3px solid #f3d3bd; }
+    .meaning { text-align: center; font-size: 22px; margin: 8px 0; line-height: 1.5; }
+    .meaning small { font-size: 17px; color: #fff; background: #8d6e63; border-radius: 8px; padding: 1px 8px; margin-right: 6px; vertical-align: middle; }
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .choices button { font-size: 22px; padding: 16px 10px; border-radius: 16px; border: 3px solid #f3d3bd; background: #fffdf8; color: var(--ink); min-height: 76px; }
+    .choices button.right { background: #c8e6c9; border-color: #4caf50; }
+    .choices button.wrong { background: #ffe0e0; border-color: #e57373; }
+    .review { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .review span { padding: 4px 10px; border-radius: 12px; background: #e8f5e9; }
+    .review span.again { background: #fff3cd; }
+    .review svg { height: 44px; width: auto; vertical-align: middle; }
+    /* 可愛的圖 */
+    .pic { width: 150px; height: 150px; border-radius: 50%; margin: 6px auto; display: flex; align-items: center; justify-content: center;
+      font-size: 88px; line-height: 1; background: radial-gradient(circle at 35% 30%, #fffdf3, #ffe3bf 70%); border: 5px solid #fff;
+      box-shadow: 0 4px 0 #f3c9a4, 0 6px 14px rgba(0,0,0,.08); animation: pop .5s ease-out; }
+    .pic.small { width: 110px; height: 110px; font-size: 62px; }
+    .qa-top { display: flex; align-items: center; gap: 12px; }
+    .qa-top .qa-q { flex: 1; }
+    .zh .em { margin-right: 4px; }
+    .sent svg { width: 100%; height: auto; display: block; background: #fffdf8; border-radius: 14px; border: 3px solid #f3d3bd; }
+    .sent-zh { text-align: center; font-size: 20px; color: #6b4e36; margin: 6px 0 2px; }
+    .qa-q { display: flex; gap: 10px; align-items: flex-start; }
+    .qa-q .who { display: flex; flex-direction: column; align-items: center; min-width: 90px; }
+    .qa-q .who b { font-size: 60px; line-height: 1.1; }
+    /* 問答人物的小圖（圓形頭像） */
+    .face { display: inline-flex; align-items: center; justify-content: center; flex: none; border-radius: 50%; line-height: 1;
+      background: radial-gradient(circle at 35% 30%, #fffdf3, #ffe3bf 70%); border: 3px solid #fff; box-shadow: 0 2px 0 #f3c9a4, 0 3px 8px rgba(0,0,0,.08); }
+    .qa-q .who .face { width: 78px; height: 78px; font-size: 48px; margin-bottom: 4px; }
+    .ans-who { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: bold; color: #6b4e36; margin-top: 12px; }
+    .ans-who .face { width: 50px; height: 50px; font-size: 30px; }
+    .ans button { display: flex; align-items: center; gap: 8px; text-align: left; }
+    .ans button > .face { width: 46px; height: 46px; font-size: 28px; }
+    .ans button .opt { flex: 1; min-width: 0; }
+    .ans .opt-zh { font-size: 19px; color: #6b4e36; text-align: center; padding: 2px 4px 4px; }
+    .qa-q .who span:not(.face) { font-size: 17px; font-weight: bold; color: #fff; background: #8d6e63; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+    .qa-q .sent { flex: 1; }
+    .ans { display: grid; gap: 10px; margin-top: 8px; }
+    .ans button { border: 3px solid #f3d3bd; border-radius: 16px; background: #fffdf8; padding: 6px; }
+    .ans button svg { width: 100%; height: auto; display: block; }
+    .ans button.right { background: #c8e6c9; border-color: #4caf50; }
+    .ans button.wrong { background: #ffe0e0; border-color: #e57373; }
+    .ans button:disabled { opacity: .45; }
+    .ans button.right:disabled { opacity: 1; }
+    .ex-box { background: var(--soft); border-radius: 16px; padding: 10px; margin: 8px 0; }
+    .ex-box h3 { margin: 0 0 6px; font-size: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .wchoices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .wchoices button { border: 3px solid #f3d3bd; border-radius: 16px; background: #fffdf8; padding: 6px; min-height: 80px; }
+    .wchoices button svg { height: 64px; width: auto; max-width: 100%; }
+    .wchoices button.right { background: #c8e6c9; border-color: #4caf50; }
+    .wchoices button.wrong { background: #ffe0e0; border-color: #e57373; }
+    @media (max-width: 600px) { .choices { grid-template-columns: 1fr; } .wlist { grid-template-columns: 1fr 1fr; } }
+
+    @keyframes pop { 0% { transform: scale(.4); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+    .cheer { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 100; pointer-events: none;
+      font-size: 90px; animation: pop .5s ease-out; }
+
+    @media (max-width: 600px) {
+      header { padding-left: 76px; padding-right: 76px; }
+      h1 { font-size: 22px; }
+      .letters { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+      .prompt svg { height: 110px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="./" class="home" aria-label="回主頁">🏠</a>
+  <h1>✍️ 英文寫字</h1>
+  <div class="tabs"><span class="seg"><button data-tab="letters" class="on">🔤 字母</button><button data-tab="words">📚 全民英檢初級單字</button></span></div>
+</header>
+
+<main id="main"></main>
+<script src="gept-elementary.js"></script>
+<script src="gept-examples.js"></script>
+<script src="gept-emoji.js"></script>
+
+<script>
+// =====================================================================
+// 字母的寫法（手寫體，照學校四線格的寫法；不用電腦字型）
+// 座標：四條線的 y 是 0、100、200、300
+//   大寫：第 1 線到第 3 線（y 0～200）
+//   小寫：第 2 線到第 3 線（y 100～200）；b d f h k l 往上到第 1 線；g j p q y 往下到第 4 線
+// 每個字母：w = 寬度，s = 筆畫（依筆順），{ dot: [x, y] } 是 i、j 的點
+// =====================================================================
+const LETTERS = {
+  A: { w: 160, s: ['M80 0 L10 200', 'M80 0 L150 200', 'M35 130 H125'] },
+  B: { w: 130, s: ['M15 0 V200', 'M15 0 H60 C115 0 115 100 60 100 H15 H65 C130 100 130 200 65 200 H15'] },
+  C: { w: 140, s: ['M116 29 A62 100 0 1 0 116 171'] },
+  D: { w: 130, s: ['M15 0 V200', 'M15 0 H50 C140 0 140 200 50 200 H15'] },
+  E: { w: 110, s: ['M15 0 V200', 'M15 0 H100', 'M15 100 H85', 'M15 200 H100'] },
+  F: { w: 110, s: ['M15 0 V200', 'M15 0 H100', 'M15 100 H85'] },
+  G: { w: 150, s: ['M121 29 A65 100 0 1 0 138 125 V112 H95'] },
+  H: { w: 130, s: ['M15 0 V200', 'M115 0 V200', 'M15 100 H115'] },
+  I: { w: 80,  s: ['M40 0 V200', 'M10 0 H70', 'M10 200 H70'] },
+  J: { w: 100, s: ['M85 0 V150 C85 180 70 200 47 200 C25 200 12 185 10 165'] },
+  K: { w: 130, s: ['M15 0 V200', 'M115 0 L15 115', 'M50 83 L120 200'] },
+  L: { w: 110, s: ['M15 0 V200 H100'] },
+  M: { w: 170, s: ['M15 0 V200', 'M15 0 L85 200 L155 0 V200'] },
+  N: { w: 140, s: ['M15 0 V200', 'M15 0 L125 200 V0'] },
+  O: { w: 150, s: ['M75 0 A65 100 0 0 0 75 200 A65 100 0 0 0 75 0'] },
+  P: { w: 120, s: ['M15 0 V200', 'M15 0 H60 C120 0 120 110 60 110 H15'] },
+  Q: { w: 150, s: ['M75 0 A65 100 0 0 0 75 200 A65 100 0 0 0 75 0', 'M88 150 L142 210'] },
+  R: { w: 125, s: ['M15 0 V200', 'M15 0 H60 C120 0 120 110 60 110 H15', 'M60 110 L120 200'] },
+  S: { w: 120, s: ['M108 35 C100 12 80 0 60 0 C30 0 12 20 12 48 C12 110 110 90 110 150 C110 180 88 200 58 200 C35 200 18 190 10 165'] },
+  T: { w: 130, s: ['M10 0 H120', 'M65 0 V200'] },
+  U: { w: 130, s: ['M15 0 V140 C15 180 38 200 65 200 C92 200 115 180 115 140 V0'] },
+  V: { w: 150, s: ['M10 0 L75 200 L140 0'] },
+  W: { w: 200, s: ['M10 0 L55 200 L100 0 L145 200 L190 0'] },
+  X: { w: 140, s: ['M15 0 L125 200', 'M125 0 L15 200'] },
+  Y: { w: 140, s: ['M15 0 L70 100', 'M125 0 L70 100 V200'] },
+  Z: { w: 130, s: ['M15 0 H115 L15 200 H115'] },
+
+  a: { w: 110, s: ['M88 125 A42 50 0 1 0 88 175', 'M94 100 V200'] },
+  b: { w: 110, s: ['M15 0 V200', 'M15 150 A42 50 0 0 1 99 150 A42 50 0 0 1 15 150'] },
+  c: { w: 100, s: ['M82 115 A42 50 0 1 0 82 185'] },
+  d: { w: 110, s: ['M88 125 A42 50 0 1 0 88 175', 'M94 0 V200'] },
+  e: { w: 100, s: ['M12 150 H94 A42 50 0 1 0 82 185'] },
+  f: { w: 90,  s: ['M80 20 C72 5 62 0 52 0 C35 0 28 15 28 35 V200', 'M5 100 H75'] },
+  g: { w: 110, s: ['M88 125 A42 50 0 1 0 88 175', 'M94 100 V255 C94 285 75 300 52 300 C32 300 18 290 12 275'] },
+  h: { w: 110, s: ['M15 0 V200', 'M15 145 C15 118 35 100 57 100 C80 100 95 118 95 145 V200'] },
+  i: { w: 50,  s: ['M25 100 V200', { dot: [25, 55] }] },
+  j: { w: 80,  s: ['M55 100 V260 C55 288 40 300 25 300 C15 300 8 296 5 290', { dot: [55, 55] }] },
+  k: { w: 100, s: ['M15 0 V200', 'M85 100 L15 160', 'M40 138 L90 200'] },
+  l: { w: 50,  s: ['M25 0 V180 C25 193 32 200 42 200'] },
+  m: { w: 160, s: ['M15 100 V200', 'M15 140 C15 115 30 100 47 100 C65 100 80 115 80 140 V200', 'M80 140 C80 115 95 100 112 100 C130 100 145 115 145 140 V200'] },
+  n: { w: 110, s: ['M15 100 V200', 'M15 145 C15 118 35 100 57 100 C80 100 95 118 95 145 V200'] },
+  o: { w: 100, s: ['M50 100 A42 50 0 0 0 50 200 A42 50 0 0 0 50 100'] },
+  p: { w: 110, s: ['M15 100 V300', 'M15 150 A42 50 0 0 1 99 150 A42 50 0 0 1 15 150'] },
+  q: { w: 110, s: ['M88 125 A42 50 0 1 0 88 175', 'M94 100 V300'] },
+  r: { w: 80,  s: ['M15 100 V200', 'M15 145 C15 118 35 100 58 100 C66 100 72 102 78 106'] },
+  s: { w: 85,  s: ['M75 115 C68 105 58 100 45 100 C25 100 13 110 13 124 C13 150 75 145 75 175 C75 190 62 200 42 200 C25 200 13 193 8 182'] },
+  t: { w: 80,  s: ['M35 20 V180 C35 193 42 200 55 200 C62 200 68 197 72 192', 'M8 100 H68'] },
+  u: { w: 110, s: ['M15 100 V155 C15 182 35 200 55 200 C75 200 95 182 95 155', 'M95 100 V200'] },
+  v: { w: 110, s: ['M10 100 L55 200 L100 100'] },
+  w: { w: 160, s: ['M8 100 L42 200 L80 100 L118 200 L152 100'] },
+  x: { w: 100, s: ['M12 100 L88 200', 'M88 100 L12 200'] },
+  y: { w: 110, s: ['M10 100 L66 200', 'M100 100 L32 300'] },
+  z: { w: 100, s: ['M12 100 H88 L12 200 H88'] },
+
+  // 單字裡的符號（只顯示，不用寫）
+  '-': { w: 60, s: ['M10 150 H50'] },
+  '.': { w: 30, s: [{ dot: [15, 192] }] },
+  "'": { w: 30, s: ['M17 5 L13 40'] },
+  ' ': { w: 50, s: [] },
+  ',': { w: 30, s: [{ dot: [15, 192] }, 'M22 196 C22 210 16 220 8 226'] },
+  '?': { w: 90, s: ['M12 40 C12 15 30 0 48 0 C70 0 86 16 86 38 C86 64 48 72 48 102 V132', { dot: [48, 192] }] },
+  '!': { w: 30, s: ['M15 0 V138', { dot: [15, 192] }] },
+};
+const UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const LOWER = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+// =====================================================================
+// 小工具
+// =====================================================================
+const NS = 'http://www.w3.org/2000/svg';
+const $main = document.getElementById('main');
+// 從「每日 15 字」跳過來：?word=a&back=gept15.html&day=1&i=0 → 直接練這個單字的寫字，寫好或不寫都可以回去
+const QP = new URLSearchParams(location.search);
+const BACK = QP.get('back') === 'gept15.html' && QP.get('word') ? { word: QP.get('word'), day: +QP.get('day') || 1, i: +QP.get('i') || 0 } : null;
+const backUrl = wrote => `gept15.html?resume=cards&day=${BACK.day}&i=${BACK.i}&wrote=${wrote ? 1 : 0}`;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const caseName = ch => (ch === ch.toUpperCase() ? '大寫' : '小寫');
+
+// 四線格：第 3 線（字母坐的那條線）用紅色，跟作業本一樣
+function linesSVG(x0, x1) {
+  return [0, 100, 200, 300].map(y =>
+    `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="${y === 200 ? '#e57373' : '#90a4ae'}" stroke-width="${y === 200 ? 3 : 2}"${y === 100 ? ' stroke-dasharray="10 8"' : ''}/>`).join('');
+}
+function strokeSVG(st, attrs) {
+  return st.dot ? `<circle cx="${st.dot[0]}" cy="${st.dot[1]}" r="9" ${attrs.dotFill ? `fill="${attrs.dotFill}"` : ''} class="${attrs.cls || ''}"/>`
+                : `<path d="${st}" fill="none" stroke-linecap="round" stroke-linejoin="round" class="${attrs.cls || ''}"/>`;
+}
+
+// 小張的字母圖（選單和題目用）
+// 格子寬度固定，每個字母的大小才會一樣（i 不會變很大、m 不會變很小）
+function letterSVG(ch, color = '#3a2a1a') {
+  const L = LETTERS[ch], W = 250, x0 = -(W - L.w) / 2;
+  return `<svg viewBox="${x0} -30 ${W} 360" xmlns="${NS}" aria-label="${caseName(ch)} ${ch}">
+    ${linesSVG(x0, x0 + W)}
+    <g stroke="${color}" fill="${color}" stroke-width="14">${L.s.map(st => strokeSVG(st, {})).join('')}</g></svg>`;
+}
+
+// 把筆畫變成很多個點（用來比對孩子寫的字）
+const sampleCache = {};
+const $measure = document.createElementNS(NS, 'svg');
+$measure.setAttribute('style', 'position:absolute;width:0;height:0;overflow:hidden');
+document.body.appendChild($measure);
+function samples(ch) {
+  if (sampleCache[ch]) return sampleCache[ch];
+  const pts = [];
+  LETTERS[ch].s.forEach(st => {
+    if (st.dot) { for (let k = 0; k < 4; k++) pts.push(st.dot); return; }
+    const p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', st);
+    $measure.appendChild(p);
+    const len = p.getTotalLength();
+    for (let d = 0; d <= len; d += 6) { const q = p.getPointAtLength(d); pts.push([q.x, q.y]); }
+    p.remove();
+  });
+  return (sampleCache[ch] = pts);
+}
+
+// 比對：coverage = 範本上的點有多少被寫到；precision = 寫的線有多少落在範本附近
+function match(tpl, ink, tol) {
+  const near = (p, list, t) => list.some(q => (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 < t * t);
+  const cov = tpl.filter(p => near(p, ink, tol)).length / tpl.length;
+  const prec = ink.length ? ink.filter(p => near(p, tpl, tol * 1.3)).length / ink.length : 0;
+  return { cov, prec };
+}
+// 自己寫（沒有描線）：跟 52 個字母都比一比，最像的是題目那個字母才算對
+// 左右位置和寬度可以不一樣；上下要對準四線格（這樣大寫、小寫才分得出來）
+function chamfer(a, b) {
+  const one = (from, to) => from.reduce((s, p) => {
+    let m = Infinity;
+    for (const q of to) { const d = (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2; if (d < m) m = d; }
+    return s + Math.sqrt(m);
+  }, 0) / from.length;
+  return (one(a, b) + one(b, a)) / 2;
+}
+function fitDistance(ch, ink) {
+  const tpl = samples(ch);
+  const xs = ink.map(p => p[0]), inkMid = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const txs = tpl.map(p => p[0]), tMid = (Math.min(...txs) + Math.max(...txs)) / 2;
+  let best = Infinity;
+  for (const k of [0.75, 0.9, 1, 1.15, 1.35]) {
+    best = Math.min(best, chamfer(tpl.map(([x, y]) => [inkMid + (x - tMid) * k, y]), ink));
+  }
+  return best;
+}
+function recognize(target, ink) {
+  const step = Math.max(1, Math.floor(ink.length / 150));   // 點太多時先減少，比較快
+  const pts = ink.filter((_, i) => i % step === 0);
+  const dist = Object.fromEntries([...UPPER, ...LOWER].map(ch => [ch, fitDistance(ch, pts)]));
+  const best = Math.min(...Object.values(dist));
+  return { ok: dist[target] <= 20 && dist[target] <= best + 0.5, dist: dist[target], best };
+}
+
+// =====================================================================
+// 說話：中文用台灣腔，字母用英文唸
+// =====================================================================
+function say(parts) {
+  speechSynthesis.cancel();
+  parts.forEach(([text, lang]) => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang === 'en' ? 'en-US' : 'zh-TW';
+    u.rate = lang === 'en' ? 0.75 : 0.9;
+    speechSynthesis.speak(u);
+  });
+}
+const sayLetter = (ch, before = '') => say([...(before ? [[before, 'zh']] : []), [caseName(ch), 'zh'], [ch.toUpperCase(), 'en']]);
+
+function cheer(emoji = '🎉') {
+  const d = document.createElement('div');
+  d.className = 'cheer'; d.textContent = emoji;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 1200);
+}
+
+// =====================================================================
+// 寫字板：四線格 + 手指寫字
+// mode：'show' 深色範本（看筆順）、'trace' 淡色範本（描寫）、'free' 沒有範本（自己寫）
+// =====================================================================
+class Board {
+  constructor(host, ch, width) {
+    this.ch = ch;
+    this.W = width || Math.max(LETTERS[ch].w + 200, 340);
+    this.ox = (this.W - LETTERS[ch].w) / 2;   // 範本放在中間
+    host.innerHTML = `<svg class="board" viewBox="0 -30 ${this.W} 360" xmlns="${NS}">
+      ${linesSVG(0, this.W)}
+      <g class="guide" transform="translate(${this.ox} 0)"></g>
+      <g class="ink" stroke="#1565c0" fill="none" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"></g>
+      <g class="nums" transform="translate(${this.ox} 0)" style="pointer-events:none"></g>
+    </svg>`;
+    this.svg = host.querySelector('svg');
+    this.$guide = this.svg.querySelector('.guide');
+    this.$nums = this.svg.querySelector('.nums');
+    this.$ink = this.svg.querySelector('.ink');
+    this.strokes = [];
+    this.enabled = true;
+    this.bindPointer();
+  }
+
+  setGuide(mode) {
+    const L = LETTERS[this.ch];
+    this.mode = mode;
+    const color = mode === 'show' ? '#3a2a1a' : '#e3d5c8';
+    this.$guide.setAttribute('stroke', color);
+    this.$guide.setAttribute('fill', color);
+    this.$guide.setAttribute('stroke-width', mode === 'show' ? 14 : 26);
+    this.$guide.innerHTML = mode === 'free' ? '' : L.s.map(st => strokeSVG(st, {})).join('');
+    // 筆順數字：每一筆開始的地方（兩筆從同一點開始時，後面的數字往旁邊移，才不會疊在一起）
+    const placed = [];
+    this.$nums.innerHTML = mode === 'free' ? '' : L.s.map((st, i) => {
+      let [x, y] = st.dot || st.match(/M\s*(-?[\d.]+)[ ,](-?[\d.]+)/).slice(1).map(Number);
+      while (placed.some(([px, py]) => Math.hypot(px - x, py - y) < 30)) x += 32;
+      placed.push([x, y]);
+      return `<g><circle cx="${x}" cy="${y}" r="15" fill="#4caf50"/><text x="${x}" y="${y + 7}" text-anchor="middle" font-size="20" font-weight="bold" fill="#fff" font-family="sans-serif">${i + 1}</text></g>`;
+    }).join('');
+  }
+
+  // 一筆一筆慢慢畫出來
+  async animate() {
+    const token = (this.animToken = {});
+    this.setGuide('show');
+    const els = [...this.$guide.children], nums = [...this.$nums.children];
+    els.forEach(el => { el.style.opacity = 0; });
+    nums.forEach(n => { n.style.opacity = 0; });
+    for (const [i, el] of els.entries()) {
+      if (this.animToken !== token) return;
+      nums[i].style.opacity = 1;
+      el.style.opacity = 1;
+      if (el.tagName === 'path') {
+        const len = el.getTotalLength();
+        el.style.transition = 'none';
+        el.style.strokeDasharray = len;
+        el.style.strokeDashoffset = len;
+        el.getBoundingClientRect();
+        const ms = Math.max(500, len * 5);
+        el.style.transition = `stroke-dashoffset ${ms}ms linear`;
+        el.style.strokeDashoffset = 0;
+        await sleep(ms + 300);
+      } else {
+        await sleep(500);
+      }
+    }
+  }
+  stopAnimation() { this.animToken = null; }
+
+  clear() { this.strokes = []; this.$ink.innerHTML = ''; }
+
+  // 孩子寫的點（換算成四線格座標，並補密一點）
+  inkPoints() {
+    const out = [];
+    this.strokes.forEach(s => {
+      for (let i = 0; i < s.length; i++) {
+        if (i === 0) { out.push(s[0]); continue; }
+        const [x0, y0] = s[i - 1], [x1, y1] = s[i], n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 4);
+        for (let k = 1; k <= n; k++) out.push([x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n]);
+      }
+    });
+    return out;
+  }
+  // 描寫模式：範本在固定位置；自己寫：可以左右移動
+  check() {
+    const ink = this.inkPoints();
+    if (ink.length < 5) return false;
+    if (this.mode === 'trace') {
+      const tpl = samples(this.ch).map(([x, y]) => [x + this.ox, y]);
+      const r = match(tpl, ink, 26);
+      return r.cov >= 0.85 && r.prec >= 0.8;
+    }
+    return recognize(this.ch, ink).ok;
+  }
+
+  bindPointer() {
+    let cur = null, path = null;
+    const pt = e => {
+      const p = this.svg.createSVGPoint();
+      p.x = e.clientX; p.y = e.clientY;
+      const q = p.matrixTransform(this.svg.getScreenCTM().inverse());
+      return [Math.round(q.x * 10) / 10, Math.round(q.y * 10) / 10];
+    };
+    const draw = () => path.setAttribute('d', cur.length === 1 ? `M${cur[0]} l0.1 0` : 'M' + cur.map(p => p.join(' ')).join(' L'));
+    this.svg.addEventListener('pointerdown', e => {
+      if (!this.enabled) return;
+      e.preventDefault();
+      this.svg.setPointerCapture(e.pointerId);
+      this.stopAnimation();
+      cur = [pt(e)];
+      this.strokes.push(cur);
+      path = document.createElementNS(NS, 'path');
+      this.$ink.appendChild(path);
+      draw();
+    });
+    this.svg.addEventListener('pointermove', e => {
+      if (!cur) return;
+      const p = pt(e), last = cur[cur.length - 1];
+      if (Math.hypot(p[0] - last[0], p[1] - last[1]) < 2) return;
+      cur.push(p); draw();
+    });
+    const end = () => { cur = null; path = null; };
+    this.svg.addEventListener('pointerup', end);
+    this.svg.addEventListener('pointercancel', end);
+  }
+}
+
+// =====================================================================
+// 進度（這台裝置記得哪些字母練過）
+// =====================================================================
+const progress = {
+  get() { try { return JSON.parse(localStorage.getItem('eng-write-stars') || '{}'); } catch (_) { return {}; } },
+  add(ch) { try { const p = this.get(); p[ch] = true; localStorage.setItem('eng-write-stars', JSON.stringify(p)); } catch (_) {} },
+};
+
+// =====================================================================
+// 畫面 1：選單
+// =====================================================================
+let menuCase = 'upper';
+function showMenu() {
+  speechSynthesis.cancel();
+  const stars = progress.get();
+  const list = menuCase === 'upper' ? UPPER : LOWER;
+  $main.innerHTML = `
+    <section class="card">
+      <h2>📖 學寫字
+        <span class="seg"><button data-case="upper" class="${menuCase === 'upper' ? 'on' : ''}">大寫</button><button data-case="lower" class="${menuCase === 'lower' ? 'on' : ''}">小寫</button></span>
+      </h2>
+      <div class="letters">${list.map(ch => `<button data-learn="${ch}" aria-label="${caseName(ch)} ${ch}">${stars[ch] ? '<span class="star">⭐</span>' : ''}${letterSVG(ch)}</button>`).join('')}</div>
+    </section>
+    <section class="card">
+      <h2>📝 小測驗（10 題）</h2>
+      <div class="quiz-btns">
+        <button class="big" data-quiz="hear-upper">🔊 聽聲音，寫大寫</button>
+        <button class="big" data-quiz="hear-lower">🔊 聽聲音，寫小寫</button>
+        <button class="big green" data-quiz="up-to-low">看大寫，寫小寫</button>
+        <button class="big green" data-quiz="low-to-up">看小寫，寫大寫</button>
+      </div>
+    </section>`;
+}
+
+// =====================================================================
+// 畫面 2：學一個字母（固定步驟：① 看 → ② 描 → ③ 描 → ④ 自己寫）
+// =====================================================================
+const STEPS = ['① 看', '② 描', '③ 描', '④ 自己寫'];
+let lesson = null;
+
+function showLearn(ch) {
+  lesson = { ch, step: 0, fails: 0 };
+  $main.innerHTML = `
+    <section class="card">
+      <div class="steps" id="steps"></div>
+      <div class="say" id="say"></div>
+      <div class="board-wrap" id="board"></div>
+      <div class="actions" id="actions"></div>
+    </section>`;
+  lesson.board = new Board(document.getElementById('board'), ch);
+  runStep();
+}
+
+function setSteps() {
+  document.getElementById('steps').innerHTML = STEPS.map((s, i) =>
+    `<span class="${i === lesson.step ? 'on' : i < lesson.step ? 'ok' : ''}">${i < lesson.step ? '✓ ' : ''}${s}</span>`).join('');
+}
+function setActions(html) { document.getElementById('actions').innerHTML = html; }
+function setSay(text) { document.getElementById('say').textContent = text; }
+
+async function runStep() {
+  const { ch, board } = lesson;
+  setSteps();
+  board.clear();
+  if (lesson.step === 0) {
+    board.enabled = false;
+    setSay(`${caseName(ch)} ${ch.toUpperCase()}：看看怎麼寫`);
+    setActions(`<button class="big white" data-act="replay">🔁 再看一次</button><button class="big white" data-act="speak">🔊 聽</button><button class="big green" data-act="next-step">我看好了 ▶</button>`);
+    sayLetter(ch, '看看怎麼寫');
+    await board.animate();
+  } else if (lesson.step <= 2) {
+    board.enabled = true;
+    board.setGuide('trace');
+    setSay('照著淡色的線描，從綠色 1 開始');
+    setActions(`<button class="big white" data-act="clear">🧽 擦掉</button><button class="big white" data-act="speak">🔊 聽</button><button class="big green" data-act="done">寫好了 ✓</button>`);
+    say([['照著描一次', 'zh']]);
+  } else {
+    board.enabled = true;
+    board.setGuide('free');
+    lesson.fails = 0;
+    setSay(`自己寫：${caseName(ch)} ${ch.toUpperCase()}`);
+    setActions(`<button class="big white" data-act="clear">🧽 擦掉</button><button class="big white" data-act="hint">💡 提示</button><button class="big green" data-act="done">寫好了 ✓</button>`);
+    sayLetter(ch, '自己寫');
+  }
+}
+
+async function learnDone() {
+  const { ch, board } = lesson;
+  if (board.check()) {
+    cheer(lesson.step === 3 ? '🌟' : '👍');
+    if (lesson.step === 3) {
+      progress.add(ch);
+      board.enabled = false;
+      board.setGuide('trace');
+      setSay('完成了！好棒！');
+      say([['完成了！好棒！', 'zh']]);
+      lesson.step = 4; setSteps();
+      const list = ch === ch.toUpperCase() ? UPPER : LOWER, i = list.indexOf(ch);
+      setActions(`<button class="big white" data-act="again">🔁 再練一次</button>` +
+        (i < list.length - 1 ? `<button class="big green" data-learn="${list[i + 1]}">下一個字母 ▶</button>` : '') +
+        `<button class="big white" data-act="menu">回選單</button>`);
+      return;
+    }
+    say([['很好！', 'zh']]);
+    setSay('很好！');
+    await sleep(900);
+    lesson.step++;
+    runStep();
+  } else {
+    lesson.fails++;
+    setSay('差一點點，再試一次，慢慢寫');
+    say([['差一點點，再試一次，慢慢寫', 'zh']]);
+    await sleep(700);
+    board.clear();
+    // 自己寫錯兩次，就把淡色的線打開幫忙
+    if (lesson.step === 3 && lesson.fails >= 2) board.setGuide('trace');
+  }
+}
+
+// =====================================================================
+// 畫面 3：小測驗
+// =====================================================================
+const QUIZ = {
+  'hear-upper': { title: '聽聲音，寫大寫', pool: UPPER, show: null },
+  'hear-lower': { title: '聽聲音，寫小寫', pool: LOWER, show: null },
+  'up-to-low':  { title: '看大寫，寫小寫', pool: LOWER, show: ch => ch.toUpperCase() },
+  'low-to-up':  { title: '看小寫，寫大寫', pool: UPPER, show: ch => ch.toLowerCase() },
+};
+let quiz = null;
+
+function startQuiz(kind) {
+  quiz = { kind, list: shuffle(QUIZ[kind].pool).slice(0, 10), i: 0, right: 0, tries: 0 };
+  showQuestion();
+}
+
+function showQuestion() {
+  const Q = QUIZ[quiz.kind], ch = quiz.list[quiz.i];
+  quiz.tries = 0; quiz.review = false;
+  const shown = Q.show && Q.show(ch);
+  $main.innerHTML = `
+    <section class="card">
+      <div class="progress">${Q.title}　第 ${quiz.i + 1} 題 / 共 ${quiz.list.length} 題　⭐ ${quiz.right}</div>
+      <div class="prompt">
+        ${shown ? `${letterSVG(shown)}<span style="font-size:40px">➜</span>` : ''}
+        <div class="say" id="say">${shown ? `這是${caseName(shown)}，請寫${caseName(ch)}` : `請寫${caseName(ch)}的字母`}</div>
+      </div>
+      <div class="board-wrap" id="board"></div>
+      <div class="actions" id="actions"></div>
+    </section>`;
+  quiz.board = new Board(document.getElementById('board'), ch, 360);
+  quiz.board.setGuide('free');
+  setActions(`<button class="big white" data-act="qspeak">🔊 再聽一次</button><button class="big white" data-act="clear">🧽 擦掉</button><button class="big green" data-act="qdone">寫好了 ✓</button>`);
+  speakQuestion();
+}
+function speakQuestion() {
+  const Q = QUIZ[quiz.kind], ch = quiz.list[quiz.i];
+  if (Q.show) say([['這是', 'zh'], [caseName(Q.show(ch)), 'zh'], [ch.toUpperCase(), 'en'], [`請寫${caseName(ch)}`, 'zh']]);
+  else sayLetter(ch, '請寫');
+}
+
+async function quizDone() {
+  const b = quiz.board, ch = quiz.list[quiz.i];
+  if (quiz.review) {                       // 看完正確寫法、描一次之後
+    if (!b.check()) { setSay('照著淡色的線描一次'); b.clear(); return; }
+    return nextQuestion();
+  }
+  if (b.check()) {
+    quiz.right++;
+    cheer('🎉');
+    setSay('答對了！好棒！');
+    say([['答對了！好棒！', 'zh']]);
+    setActions('');
+    await sleep(1300);
+    return nextQuestion();
+  }
+  quiz.tries++;
+  if (quiz.tries < 2) {
+    setSay('再試一次，慢慢寫');
+    say([['再試一次，慢慢寫', 'zh']]);
+    await sleep(600);
+    b.clear();
+    return;
+  }
+  // 兩次都沒寫對：看正確的寫法，再一起描一次（不扣分、不罵人）
+  quiz.review = true;
+  b.clear();
+  b.enabled = false;
+  setSay('我們一起看看怎麼寫');
+  sayLetter(ch, '我們一起看看怎麼寫');
+  await b.animate();
+  b.setGuide('trace');
+  b.enabled = true;
+  setSay('照著描一次');
+  say([['照著描一次', 'zh']]);
+}
+function nextQuestion() {
+  quiz.i++;
+  if (quiz.i < quiz.list.length) return showQuestion();
+  const n = quiz.right, total = quiz.list.length;
+  $main.innerHTML = `<section class="card"><div class="result">
+      <div class="stars">${'⭐'.repeat(Math.max(1, Math.round(n / 2)))}</div>
+      答對 ${n} 題<br>${n === total ? '全部答對！太厲害了！' : '做完了！好棒！'}
+    </div>
+    <div class="actions"><button class="big green" data-quiz="${quiz.kind}">🔁 再玩一次</button><button class="big white" data-act="menu">回選單</button></div></section>`;
+  cheer(n === total ? '🏆' : '🎉');
+  say([[`做完了！答對${n}題，好棒！`, 'zh']]);
+}
+
+// =====================================================================
+// 全民英檢初級單字
+// =====================================================================
+const WORDS = (window.GEPT_ELEMENTARY || []).map(([w, pos, zh]) => ({ w, pos, zh, short: zh.split(/[；、]/)[0] }));
+const isLetter = c => /[A-Za-z]/.test(c);
+const letterIdx = w => [...w].map((c, i) => (isLetter(c) ? i : -1)).filter(i => i >= 0);
+const sayWord = w => say([[w, 'en']]);
+const spell = w => say([[[...w].filter(isLetter).map(c => c.toUpperCase()).join(', '), 'en']]);
+// 完整唸一個單字：整個字 → 一個一個字母 → 再唸一次整個字 → 詞性 → 中文意思（例：the、T H E、the、冠詞、這個那個）
+const POSN = { 名: '名詞', 動: '動詞', 形: '形容詞', 副: '副詞', 代: '代名詞', 介: '介系詞', 連: '連接詞', 數: '數詞', 助: '助動詞', 限定: '限定詞', 感: '感嘆詞', 冠: '冠詞', 不定詞: '不定詞' };
+const posSay = x => POSN[(x.pos || '').split('/')[0]] || '';   // 詞性：只唸第一個（和第一組意思對得起來）
+const zhOf = x => (x.zh || x.short || '').split('；')[0].replace(/[()（）]/g, '');
+const sayFull = x => say([[x.w, 'en'], [[...x.w].filter(isLetter).map(c => c.toUpperCase()).join(', '), 'en'], [x.w, 'en'], [posSay(x), 'zh'], [zhOf(x), 'zh']]);
+
+// 整個單字畫在四線格上（一樣用手寫體，不用電腦字型）
+// o.cur：目前在寫的字母（橘色底）；o.hideFrom：從這個位置開始的字母先藏起來（考試用）
+function wordSVG(word, o = {}) {
+  const gap = 26, pad = 30;
+  let x = 0, bg = '', fg = '';
+  [...word].forEach((ch, i) => {
+    const L = LETTERS[ch] || LETTERS[' '];
+    if (i === o.cur) bg += `<rect x="${x - 10}" y="-24" width="${L.w + 20}" height="348" rx="16" fill="#ffe2c9"/>`;
+    if (o.hideFrom != null && i >= o.hideFrom && isLetter(ch)) fg += `<line x1="${x}" y1="232" x2="${x + L.w}" y2="232" stroke="#bcaaa4" stroke-width="8" stroke-linecap="round"/>`;
+    else {
+      const color = o.written != null && i < o.written && isLetter(ch) ? '#1565c0' : '#3a2a1a';
+      fg += `<g transform="translate(${x} 0)" stroke="${color}" fill="${color}" stroke-width="14">${L.s.map(st => strokeSVG(st, {})).join('')}</g>`;
+    }
+    x += L.w + gap;
+  });
+  const W = Math.max(x - gap, 60);
+  return `<svg viewBox="${-pad} -30 ${W + pad * 2} 360" xmlns="${NS}" aria-label="${word}">${bg}${linesSVG(-pad, W + pad)}${fg}</svg>`;
+}
+
+// 單字練習進度存在目前裝置的瀏覽器中。
+const wprog = {
+  data: {},
+  async load() {
+    let l = null;
+    try { l = JSON.parse(localStorage.getItem('eng-words') || 'null'); } catch (_) {}
+    this.data = l?.words || {};
+  },
+  save() {
+    try { localStorage.setItem('eng-words', JSON.stringify({ version: 1, words: this.data })); } catch (_) {}
+  },
+  get(w) { return this.data[w] || {}; },
+  set(w, patch) { this.data[w] = { ...this.get(w), ...patch }; this.save(); },
+};
+
+let tab = 'letters', group = 'a', wfilter = 'all', qrange = 'group';
+const GROUPS = 'abcdefghijklmnopqrstuvwxyz'.split('');
+function groupWords() { return WORDS.filter(x => x.w[0].toLowerCase() === group); }
+function filtered(list) {
+  if (wfilter === 'done') return list.filter(x => wprog.get(x.w).p);
+  if (wfilter === 'again') return list.filter(x => wprog.get(x.w).a);
+  return list;
+}
+function rangeWords() {
+  if (qrange === 'done') return WORDS.filter(x => wprog.get(x.w).p);
+  if (qrange === 'again') return WORDS.filter(x => wprog.get(x.w).a);
+  return groupWords();
+}
+
+function showWords() {
+  speechSynthesis.cancel();
+  const list = filtered(groupWords());
+  const nDone = WORDS.filter(x => wprog.get(x.w).p).length, nAgain = WORDS.filter(x => wprog.get(x.w).a).length;
+  $main.innerHTML = `
+    <section class="card">
+      <h2>📚 全民英檢初級單字 <span style="font-size:18px;color:#8a6d57">共 ${WORDS.length} 個・練過 ${nDone} 個</span></h2>
+      <div class="groups">${GROUPS.map(g => `<button class="${g === group ? 'on' : ''}" data-group="${g}" aria-label="${g.toUpperCase()}">${letterSVG(g)}</button>`).join('')}</div>
+    </section>
+    <section class="card">
+      <h2>📝 考試和練習（每次 10 題）</h2>
+      <div class="filter">
+        <button class="${qrange === 'group' ? 'on' : ''}" data-qrange="group">這一組（${group.toUpperCase()} 開頭）</button>
+        <button class="${qrange === 'done' ? 'on' : ''}" data-qrange="done">練過的（${nDone}）</button>
+        <button class="${qrange === 'again' ? 'on' : ''}" data-qrange="again">要再練的（${nAgain}）</button>
+      </div>
+      <div class="test6">
+        <button class="big" data-wquiz="hear">🔊 聽單字，寫出來</button>
+        <button class="big" data-wquiz="zh">✍️ 看中文，寫英文</button>
+        <button class="big" data-wquiz="choose">👀 看英文，選中文</button>
+        <button class="big green" data-qakind="fill">🧩 例句填空</button>
+        <button class="big green" data-qakind="test">💬 問答測驗</button>
+        <button class="big white" data-qakind="practice">🗣️ 問答練習<br><small style="font-size:15px;font-weight:normal">不計分，跟著說</small></button>
+      </div>
+    </section>
+    <section class="card">
+      <h2>📖 ${group.toUpperCase()} 開頭的單字</h2>
+      <div class="filter">
+        <button class="${wfilter === 'all' ? 'on' : ''}" data-wfilter="all">全部（${groupWords().length}）</button>
+        <button class="${wfilter === 'done' ? 'on' : ''}" data-wfilter="done">⭐ 練過的</button>
+        <button class="${wfilter === 'again' ? 'on' : ''}" data-wfilter="again">🔁 要再練的</button>
+      </div>
+      <div class="wlist">${list.length ? list.map(x => {
+        const pr = wprog.get(x.w);
+        return `<button data-word="${esc(x.w)}">${pr.a ? '<span class="mark">🔁</span>' : pr.p ? '<span class="mark">⭐</span>' : ''}${wordSVG(x.w)}<span class="zh">${picOf(x.w) ? `<span class="em">${picOf(x.w)}</span>` : ''}${esc(x.short)}</span></button>`;
+      }).join('') : '<p class="hint">這一組還沒有</p>'}</div>
+    </section>`;
+}
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---------- 學一個單字：① 看 → ② 描 → ③ 自己寫（一次寫一個字母）----------
+const WSTEPS = ['① 看', '② 描', '③ 自己寫'];
+let wl = null;
+function showWordLearn(w) {
+  const x = WORDS.find(y => y.w === w);
+  wl = { x, w, idx: letterIdx(w), step: 0, k: 0, fails: 0 };
+  $main.innerHTML = `
+    <section class="card">
+      ${BACK ? '<button class="small-btn" data-act="wback0">↩ 先不寫，回每日 15 字</button>' : ''}
+      <div class="steps" id="steps"></div>
+      <div class="wordview" id="wordview"></div>
+      ${picHTML(w, 'small')}
+      <div class="meaning"><small>${esc(x.pos)}</small>${esc(x.zh)}</div>
+      <div class="say" id="say"></div>
+      <div class="board-wrap" id="board"></div>
+      <div class="actions" id="actions"></div>
+    </section>`;
+  wordStep();
+}
+function wordSteps() {
+  document.getElementById('steps').innerHTML = WSTEPS.map((t, i) =>
+    `<span class="${i === wl.step ? 'on' : i < wl.step ? 'ok' : ''}">${i < wl.step ? '✓ ' : ''}${t}</span>`).join('');
+}
+function wordStep() {
+  wordSteps();
+  const $b = document.getElementById('board');
+  if (wl.step === 0) {
+    document.getElementById('wordview').innerHTML = wordSVG(wl.w);
+    const ex = exOf(wl.w);
+    $b.innerHTML = ex ? `<div class="ex-box" style="width:100%"><h3>📖 例句 <button class="small-btn" data-act="ex-say">🔊 聽例句</button></h3>
+      <div class="sent">${sentenceSVG(ex.e, { mark: wl.w })}</div><div class="sent-zh">${esc(ex.ez)}</div></div>` : '';
+    setSay('聽一聽，看一看');
+    setActions(`<button class="big white" data-act="wspeak">🔊 聽</button><button class="big white" data-act="wspell">🔤 拼一次</button><button class="big green" data-act="wstep1">我看好了 ▶</button><button class="big white" data-act="wmenu">回單字表</button>`);
+    sayFull(wl.x);
+    return;
+  }
+  const i = wl.idx[wl.k], ch = wl.w[i];
+  document.getElementById('wordview').innerHTML = wordSVG(wl.w, { cur: i, written: i });
+  wl.board = new Board($b, ch);
+  wl.board.setGuide(wl.step === 1 ? 'trace' : 'free');
+  wl.fails = 0;
+  setSay(`${wl.step === 1 ? '描' : '寫'}第 ${wl.k + 1} 個字母（共 ${wl.idx.length} 個）`);
+  setActions(`<button class="big white" data-act="wclear">🧽 擦掉</button>${wl.step === 2 ? '<button class="big white" data-act="whint">💡 提示</button>' : ''}<button class="big white" data-act="wspeak">🔊 聽</button><button class="big green" data-act="wdone">寫好了 ✓</button>`);
+  sayLetter(ch);
+}
+async function wordDone() {
+  const b = wl.board;
+  if (!b.check()) {
+    wl.fails++;
+    setSay('差一點點，再試一次，慢慢寫');
+    say([['差一點點，再試一次', 'zh']]);
+    await sleep(600);
+    b.clear();
+    if (wl.step === 2 && wl.fails >= 2) b.setGuide('trace');
+    return;
+  }
+  cheer('👍');
+  wl.k++;
+  if (wl.k < wl.idx.length) { await sleep(500); return wordStep(); }
+  wl.k = 0;
+  if (wl.step === 1) {
+    say([['很好！', 'zh']]); setSay('很好！');
+    await sleep(900);
+    wl.step = 2; return wordStep();
+  }
+  // 三個步驟都完成
+  wprog.set(wl.w, { p: 1, a: 0 });
+  wl.step = 3; wordSteps();
+  cheer('🌟');
+  document.getElementById('wordview').innerHTML = wordSVG(wl.w, { written: wl.w.length });
+  document.getElementById('board').innerHTML = '';
+  setSay('完成了！好棒！');
+  say([[wl.w, 'en'], ['完成了！好棒！', 'zh']]);
+  const list = groupWords(), j = list.findIndex(y => y.w === wl.w);
+  if (BACK) {   // 寫熟了：慶祝一下就自動回去（想再練的話，在這幾秒內按「再練一次」）
+    setActions(`<button class="big green" data-act="wback1">✔ 寫好了，回每日 15 字</button><button class="big white" data-act="wagain">🔁 再練一次</button>`);
+    const me = wl; clearTimeout(window.backTimer);
+    window.backTimer = setTimeout(() => { if (wl === me && wl.step === 3) location.href = backUrl(true); }, 3500);
+    return;
+  }
+  setActions(`<button class="big white" data-act="wagain">🔁 再練一次</button>` +
+    (j >= 0 && j < list.length - 1 ? `<button class="big green" data-word="${esc(list[j + 1].w)}">下一個單字 ▶</button>` : '') +
+    `<button class="big white" data-act="wmenu">回單字表</button>`);
+}
+
+// ---------- 單字考試 ----------
+const WQUIZ = { hear: '🔊 聽單字，寫出來', zh: '看中文，寫英文', choose: '看英文，選中文' };
+let wq = null;
+function startWordQuiz(kind) {
+  const pool = rangeWords();
+  if (!pool.length) return alert(qrange === 'done' ? '還沒有練過的單字，先去練幾個吧！' : '沒有要再練的單字 👍');
+  wq = { kind, list: shuffle(pool).slice(0, 10), q: 0, results: [] };
+  wordQuestion();
+}
+function wordQuestion() {
+  const x = wq.list[wq.q];
+  wq.k = 0; wq.tries = 0; wq.review = false; wq.wrong = false; wq.idx = letterIdx(x.w);
+  const head = `<div class="progress">${WQUIZ[wq.kind]}　第 ${wq.q + 1} 題 / 共 ${wq.list.length} 題　<button class="small-btn" data-act="wmenu">回單字表</button></div>`;
+  if (wq.kind === 'choose') {
+    const others = shuffle(WORDS.filter(y => y.short !== x.short)).slice(0, 3);
+    const opts = shuffle([x, ...others]);
+    $main.innerHTML = `<section class="card">${head}
+      <div class="wordview">${wordSVG(x.w)}</div>
+      <div class="actions"><button class="big white" data-act="wqspeak">🔊 再聽一次</button></div>
+      <div class="say" id="say">這個單字是什麼意思？</div>
+      <div class="choices">${opts.map(o => `<button data-choice="${esc(o.w)}">${esc(o.short)}</button>`).join('')}</div></section>`;
+    sayWord(x.w);
+    return;
+  }
+  $main.innerHTML = `<section class="card">${head}
+    ${wq.kind === 'zh' ? `<div class="meaning"><small>${esc(x.pos)}</small>${esc(x.zh)}</div>` : ''}
+    <div class="wordview" id="wordview"></div>
+    <div class="say" id="say"></div>
+    <div class="board-wrap" id="board"></div>
+    <div class="actions" id="actions"></div></section>`;
+  wordQSpeak();
+  wordQLetter();
+}
+function wordQSpeak() {
+  const x = wq.list[wq.q];
+  if (wq.kind === 'hear' || wq.kind === 'choose') say([[x.w, 'en'], [x.w, 'en']]);
+  else say([[`請寫：${x.short}`, 'zh']]);
+}
+function wordQLetter() {
+  const x = wq.list[wq.q], i = wq.idx[wq.k], ch = x.w[i];
+  wq.tries = 0; wq.review = false;
+  document.getElementById('wordview').innerHTML = wordSVG(x.w, { cur: i, hideFrom: i, written: i });
+  wq.board = new Board(document.getElementById('board'), ch);
+  wq.board.setGuide('free');
+  setSay(`寫第 ${wq.k + 1} 個字母（共 ${wq.idx.length} 個）`);
+  setActions(`<button class="big white" data-act="wqspeak">🔊 再聽一次</button><button class="big white" data-act="wqclear">🧽 擦掉</button><button class="big green" data-act="wqdone">寫好了 ✓</button>`);
+}
+async function wordQDone() {
+  const b = wq.board, x = wq.list[wq.q], ch = x.w[wq.idx[wq.k]];
+  if (!wq.review && !b.check()) {
+    wq.tries++;
+    if (wq.tries < 2) { setSay('再試一次，慢慢寫'); say([['再試一次，慢慢寫', 'zh']]); await sleep(600); b.clear(); return; }
+    // 兩次沒寫對：看正確寫法、描一次（不扣分，這個單字之後標 🔁 再練）
+    wq.review = true; wq.wrong = true;
+    b.clear(); b.enabled = false;
+    setSay('我們一起看看怎麼寫');
+    sayLetter(ch, '我們一起看看怎麼寫');
+    await b.animate();
+    b.setGuide('trace'); b.enabled = true;
+    setSay('照著描一次');
+    return;
+  }
+  if (wq.review && !b.check()) { setSay('照著淡色的線描一次'); b.clear(); return; }
+  wq.k++;
+  if (wq.k < wq.idx.length) { if (!wq.review) cheer('👍'); await sleep(400); return wordQLetter(); }
+  wordQFinish(!wq.wrong);
+}
+async function wordQFinish(ok) {
+  const x = wq.list[wq.q];
+  wq.results.push({ w: x.w, ok });
+  wprog.set(x.w, { a: ok ? 0 : 1 });
+  const $wv = document.getElementById('wordview');
+  if ($wv) $wv.innerHTML = wordSVG(x.w, { written: x.w.length });
+  const $b = document.getElementById('board'); if ($b) $b.innerHTML = '';
+  setActions('');
+  if (ok) { cheer('🎉'); setSay('答對了！好棒！'); say([[x.w, 'en'], ['答對了！好棒！', 'zh']]); }
+  else { setSay(`寫完了！${x.short}，再多練習幾次就會了`); say([[x.w, 'en'], ['寫完了！再多練習幾次就會了', 'zh']]); }
+  await sleep(2200);
+  wq.q++;
+  if (wq.q < wq.list.length) return wordQuestion();
+  wordQuizResult();
+}
+function wordQuizResult() {
+  const n = wq.results.filter(r => r.ok).length, total = wq.results.length;
+  $main.innerHTML = `<section class="card"><div class="result">
+      <div class="stars">${'⭐'.repeat(Math.max(1, Math.round(n / total * 5)))}</div>
+      答對 ${n} 題 / 共 ${total} 題<br>${n === total ? '全部答對！太厲害了！' : '做完了！好棒！'}</div>
+    <div class="review">${wq.results.map(r => `<span class="${r.ok ? '' : 'again'}">${wordSVG(r.w)} ${r.ok ? '✓' : '🔁'}</span>`).join('')}</div>
+    <p class="hint" style="text-align:center">🔁 的單字，在單字表按「要再練的」就找得到</p>
+    <div class="actions"><button class="big green" data-wquiz="${wq.kind}">🔁 再考一次</button><button class="big white" data-act="wmenu">回單字表</button></div></section>`;
+  cheer(n === total ? '🏆' : '🎉');
+  say([[`做完了！答對${n}題，好棒！`, 'zh']]);
+}
+async function wordChoose(btn) {
+  const x = wq.list[wq.q];
+  if (wq.answered) return;
+  wq.answered = true;
+  const ok = btn.dataset.choice === x.w;
+  document.querySelectorAll('[data-choice]').forEach(b => { if (b.dataset.choice === x.w) b.classList.add('right'); });
+  if (!ok) btn.classList.add('wrong');
+  setSay(ok ? '答對了！好棒！' : `答案是「${x.short}」`);
+  if (ok) cheer('🎉');
+  say([[ok ? '答對了！好棒！' : `答案是${x.short}`, 'zh']]);
+  await sleep(ok ? 1300 : 2500);
+  wq.answered = false;
+  wq.results.push({ w: x.w, ok });
+  wprog.set(x.w, { a: ok ? 0 : 1 });
+  wq.q++;
+  if (wq.q < wq.list.length) return wordQuestion();
+  wordQuizResult();
+}
+
+// =====================================================================
+// 例句、問答（題目來源 gept-examples.js：{ 單字: [例句, 中文, 問題, 中文, 回答, 中文] }）
+// =====================================================================
+const EX = window.GEPT_EXAMPLES || {};
+const PIC = window.GEPT_EMOJI || {};
+const picOf = w => PIC[w] || '';
+const picHTML = (w, cls = '') => picOf(w) ? `<div class="pic ${cls}" aria-hidden="true">${picOf(w)}</div>` : '';
+const exOf = w => { const r = EX[w]; return r ? { e: r[0], ez: r[1], q: r[2], qz: r[3], a: r[4], az: r[5] } : null; };
+const hasEx = x => !!EX[x.w];
+
+// 整句用手寫體畫出來，太長會自動換行；o.mark：這個單字標橘色；o.blank：這個單字挖空（填空題）
+function sentenceSVG(text, o = {}) {
+  const LETTER_GAP = 26, WORD_GAP = 80, MAX = o.max || 3400, LINE_H = 380, pad = 30;
+  const target = o.mark || o.blank;
+  const tokens = text.split(' ');
+  // 找出句子裡的目標單字（可能是好幾個字的片語，例如 ice cream）
+  const tw = target ? target.toLowerCase().split(' ') : [];
+  const isTarget = new Array(tokens.length).fill(false);
+  if (tw.length) for (let i = 0; i + tw.length <= tokens.length; i++) {
+    if (tw.every((t, k) => tokens[i + k].toLowerCase().replace(/[.,?!]+$/, '') === t)) { for (let k = 0; k < tw.length; k++) isTarget[i + k] = true; break; }
+  }
+  const wordW = t => [...t].reduce((sum, c) => sum + (LETTERS[c] || LETTERS[' ']).w + LETTER_GAP, -LETTER_GAP);
+  const lines = [[]];
+  let x = 0;
+  tokens.forEach((t, i) => {
+    const w = wordW(t);
+    if (x > 0 && x + WORD_GAP + w > MAX) { lines.push([]); x = 0; }
+    lines[lines.length - 1].push({ t, i, x: x ? x + WORD_GAP : 0 });
+    x = (x ? x + WORD_GAP : 0) + w;
+  });
+  let body = '';
+  const W = Math.min(MAX, Math.max(...lines.map(l => { const last = l[l.length - 1]; return last.x + wordW(last.t); })));
+  lines.forEach((l, li) => {
+    const y0 = li * LINE_H;
+    body += `<g transform="translate(0 ${y0})">${linesSVG(-pad, W + pad)}`;
+    l.forEach(({ t, i, x: wx }) => {
+      const hit = isTarget[i];
+      const color = hit && o.mark ? '#f06a1f' : '#3a2a1a';
+      let cx = wx;
+      [...t].forEach(c => {
+        const L = LETTERS[c] || LETTERS[' '];
+        if (hit && o.blank && /[A-Za-z]/.test(c)) body += `<line x1="${cx}" y1="232" x2="${cx + L.w}" y2="232" stroke="#f06a1f" stroke-width="9" stroke-linecap="round"/>`;
+        else body += `<g transform="translate(${cx} 0)" stroke="${color}" fill="${color}" stroke-width="14">${L.s.map(st => strokeSVG(st, {})).join('')}</g>`;
+        cx += L.w + LETTER_GAP;
+      });
+    });
+    body += `</g>`;
+  });
+  const H = lines.length * LINE_H - 20;
+  // 寬度跟句子長度成比例，短句不會被放得特別大（每個選項的字一樣大）
+  const pct = Math.min(100, (W + pad * 2) / (MAX + pad * 2) * 100);
+  return `<svg viewBox="${-pad} -30 ${W + pad * 2} ${H}" xmlns="${NS}" aria-label="${esc(text)}" style="width:${pct.toFixed(1)}%;margin:0 auto">${body}</svg>`;
+}
+// 問答練習的提問人：男生、女生、老人、小孩，聲音都不一樣
+// iPad 上有男聲、女聲就用；沒有的話，用音調高低和說話快慢來分
+const PEOPLE = [
+  { icon: '👦', name: '哥哥 Tom',     sex: 'm', pitch: 1.35, rate: 0.8 },
+  { icon: '👧', name: '妹妹 Amy',     sex: 'f', pitch: 1.6,  rate: 0.8 },
+  { icon: '👨‍🏫', name: '陳老師',     sex: 'm', pitch: 0.95, rate: 0.75 },
+  { icon: '👩', name: '媽媽',         sex: 'f', pitch: 1.1,  rate: 0.75 },
+  { icon: '👴', name: '爺爺',         sex: 'm', pitch: 0.6,  rate: 0.65 },
+  { icon: '👵', name: '奶奶',         sex: 'f', pitch: 0.85, rate: 0.65 },
+  { icon: '🧒', name: '小朋友 Ben',   sex: 'm', pitch: 1.8,  rate: 0.85 },
+];
+const FEMALE = /samantha|karen|moira|tessa|victoria|allison|ava|susan|zira|serena|fiona|nicky|kate|jenny|aria|emma|joanna|salli|kimberly|ivy|female/i;
+const MALE = /daniel|fred|alex|aaron|arthur|gordon|rishi|tom\b|david|mark|guy|male|ryan|oliver|matthew|justin|joey|eddy|reed|rocko/i;
+let enVoices = [];
+function loadVoices() { try { enVoices = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang)); } catch (_) {} }
+loadVoices();
+try { speechSynthesis.addEventListener('voiceschanged', loadVoices); } catch (_) {}
+function voiceFor(sex) {
+  const pick = re => enVoices.filter(v => re.test(v.name) && !(sex === 'm' ? FEMALE : MALE).test(v.name));
+  const list = pick(sex === 'm' ? MALE : FEMALE);
+  return list.find(v => /en-US/i.test(v.lang)) || list[0] || null;
+}
+// 同一個單字每次都是同一個人問，比較有規律
+const personIdx = w => [...w].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % PEOPLE.length;
+const personOf = w => PEOPLE[personIdx(w)];
+// 回答的人：跟問的人配成固定的一組，聲音差很多（男生問→女生答、老人問→小孩答…）
+// 0 哥哥 Tom、1 妹妹 Amy、2 陳老師、3 媽媽、4 爺爺、5 奶奶、6 小朋友 Ben
+const PAIR = [1, 4, 6, 0, 6, 1, 3];
+const answererOf = w => PEOPLE[PAIR[personIdx(w)]];
+const sayEn = (t, rate, who) => {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t);
+  u.lang = 'en-US'; u.rate = rate || (who ? who.rate : 0.75);
+  if (who) { const v = voiceFor(who.sex); if (v) u.voice = v; u.pitch = who.pitch; }
+  speechSynthesis.speak(u);
+};
+
+// ---------- 問答練習：聽問題 → 選回答 → 跟著說一次（不計分，照順序練）----------
+let qa = null;
+function startQA(kind) {
+  const pool = rangeWords().filter(hasEx);
+  if (!pool.length) return alert(qrange === 'done' ? '還沒有練過的單字，先去練幾個吧！' : qrange === 'again' ? '沒有要再練的單字 👍' : '這一組還沒有例句');
+  // 練習：照單字表順序，從上次練到的地方接著練；測驗：隨機 10 題
+  let list;
+  if (kind === 'practice') {
+    const key = 'qa-pos-' + qrange + (qrange === 'group' ? group : '');
+    let start = 0; try { start = +localStorage.getItem(key) || 0; } catch (_) {}
+    if (start >= pool.length) start = 0;
+    list = pool.slice(start, start + 10);
+    if (list.length < 10 && pool.length > list.length) list = [...list, ...pool.slice(0, 10 - list.length)];
+    try { localStorage.setItem(key, String((start + 10) % pool.length)); } catch (_) {}
+  } else list = shuffle(pool).slice(0, 10);
+  qa = { kind, list, i: 0, results: [] };
+  qaQuestion();
+}
+const QA_TITLE = { practice: '💬 問答練習', test: '💬 問答測驗', fill: '🧩 例句填空' };
+function qaQuestion() {
+  const x = qa.list[qa.i], ex = exOf(x.w);
+  qa.answered = false;
+  const head = `<div class="progress">${QA_TITLE[qa.kind]}　第 ${qa.i + 1} 題 / 共 ${qa.list.length} 題　<button class="small-btn" data-act="wmenu">回單字表</button></div>`;
+  if (qa.kind === 'fill') {
+    // 例句填空：句子挖掉單字，從四個單字選一個
+    // 錯的選項用「詞類不一樣」的單字，放進句子一定不通順，答案才只有一個
+    const posOf = y => y.pos.split('/');
+    const diff = WORDS.filter(y => y.w !== x.w && !posOf(y).some(p => posOf(x).includes(p)) && !ex.e.toLowerCase().includes(y.w.toLowerCase()));
+    const others = shuffle(diff.length >= 3 ? diff : WORDS.filter(y => y.w !== x.w)).slice(0, 3);
+    $main.innerHTML = `<section class="card">${head}
+      <div class="sent">${sentenceSVG(ex.e, { blank: x.w })}</div>
+      <div class="sent-zh">${esc(ex.ez)}</div>
+      <div id="qa-pic"></div>
+      <div class="say" id="say">空格要填哪一個單字？</div>
+      <div class="wchoices">${shuffle([x, ...others]).map(o => `<button data-qaw="${esc(o.w)}">${wordSVG(o.w)}</button>`).join('')}</div>
+      <div class="actions" id="actions"></div></section>`;
+    say([['空格要填哪一個單字？', 'zh']]);
+    return;
+  }
+  const others = shuffle(qa.list.filter(y => y.w !== x.w).concat(shuffle(rangeWords().filter(hasEx)).slice(0, 6)))
+    .filter((y, k, arr) => y.w !== x.w && arr.findIndex(z => z.w === y.w) === k && exOf(y.w).a !== ex.a).slice(0, 2);
+  const opts = shuffle([x, ...others]);
+  const asker = personOf(x.w), answerer = answererOf(x.w);
+  // 回答的中文：練習時直接看得到；測驗時選完才出現（不然看中文就知道答案）
+  const hideZh = qa.kind === 'test' ? ' hidden' : '';
+  $main.innerHTML = `<section class="card">${head}
+    <div class="qa-top"><div class="qa-q"><div class="who"><span class="face">${asker.icon}</span><span>${asker.name}</span></div><div class="sent">${sentenceSVG(ex.q)}<div class="sent-zh">${esc(ex.qz)}</div></div></div>
+      <div id="qa-pic">${qa.kind === 'practice' ? picHTML(x.w) : ''}</div></div>
+    <div class="actions"><button class="big white" data-act="qa-q">🔊 再聽一次</button></div>
+    <div class="say" id="say">${asker.name}問${answerer.name}，${answerer.name}要怎麼回答？選一個</div>
+    <div class="ans-who"><span class="face">${answerer.icon}</span>${answerer.name} 回答：</div>
+    <div class="ans">${opts.map(o => `<button data-qa="${esc(o.w)}"><span class="face">${answerer.icon}</span><div class="opt">${sentenceSVG(exOf(o.w).a, { max: 4200 })}<div class="opt-zh"${hideZh}>${esc(exOf(o.w).az)}</div></div></button>`).join('')}</div>
+    <div class="actions" id="actions"></div></section>`;
+  sayEn(ex.q, 0, personOf(x.w));
+}
+async function qaPick(btn) {
+  if (qa.answered) return;
+  const x = qa.list[qa.i], ex = exOf(x.w), ok = btn.dataset.qa === x.w;
+  if (qa.kind === 'practice' && !ok) {       // 練習：選錯可以再選
+    btn.disabled = true; btn.classList.add('wrong');
+    setSay('再想想看，聽聽問題'); say([['再想想看', 'zh']]);
+    return;
+  }
+  qa.answered = true;
+  document.querySelectorAll('[data-qa]').forEach(b => {
+    b.disabled = true;
+    b.querySelector('.opt-zh').hidden = false;
+    if (b.dataset.qa === x.w) b.classList.add('right');
+  });
+  if (!ok) btn.classList.add('wrong');
+  qa.results.push({ w: x.w, ok });
+  if (qa.kind === 'test') { wprog.set(x.w, ok ? { a: 0 } : { a: 1 }); document.getElementById('qa-pic').innerHTML = picHTML(x.w); }
+  if (ok) cheer('🎉');
+  setSay(ok ? `答對了！${ex.az}` : `正確的回答是：${ex.az}`);
+  // 跟著說一次（練習時）
+  sayEn(ex.a, 0, answererOf(x.w));
+  setActions(`<button class="big white" data-act="qa-a">🔊 聽回答</button>${qa.kind === 'practice' ? '<span class="say" style="align-self:center">🗣️ 跟著說一次</span>' : ''}<button class="big green" data-act="qa-next">下一題 ▶</button>`);
+}
+async function fillPick(btn) {
+  if (qa.answered) return;
+  const x = qa.list[qa.i], ex = exOf(x.w), ok = btn.dataset.qaw === x.w;
+  qa.answered = true;
+  document.querySelectorAll('[data-qaw]').forEach(b => { b.disabled = true; if (b.dataset.qaw === x.w) b.classList.add('right'); });
+  if (!ok) btn.classList.add('wrong');
+  qa.results.push({ w: x.w, ok });
+  wprog.set(x.w, ok ? { a: 0 } : { a: 1 });
+  document.querySelector('.sent').innerHTML = sentenceSVG(ex.e, { mark: x.w });
+  document.getElementById('qa-pic').innerHTML = picHTML(x.w, 'small');
+  if (ok) cheer('🎉');
+  setSay(ok ? '答對了！好棒！' : `答案是「${x.w}」`);
+  sayEn(ex.e);
+  setActions(`<button class="big white" data-act="qa-e">🔊 聽句子</button><button class="big green" data-act="qa-next">下一題 ▶</button>`);
+}
+function qaNext() {
+  qa.i++;
+  if (qa.i < qa.list.length) return qaQuestion();
+  const n = qa.results.filter(r => r.ok).length, total = qa.results.length;
+  const practice = qa.kind === 'practice';
+  $main.innerHTML = `<section class="card"><div class="result">
+      <div class="stars">${'⭐'.repeat(practice ? 5 : Math.max(1, Math.round(n / total * 5)))}</div>
+      ${practice ? '練習完了！好棒！' : `答對 ${n} 題 / 共 ${total} 題<br>${n === total ? '全部答對！太厲害了！' : '做完了！好棒！'}`}</div>
+    ${practice ? '' : `<div class="review">${qa.results.map(r => `<span class="${r.ok ? '' : 'again'}">${wordSVG(r.w)} ${r.ok ? '✓' : '🔁'}</span>`).join('')}</div>`}
+    <div class="actions"><button class="big green" data-qakind="${qa.kind}">${practice ? '▶ 再練 10 題' : '🔁 再考一次'}</button><button class="big white" data-act="wmenu">回單字表</button></div></section>`;
+  cheer(n === total ? '🏆' : '🎉');
+  say([[practice ? '練習完了！好棒！' : `做完了！答對${n}題，好棒！`, 'zh']]);
+}
+
+// =====================================================================
+// 按鈕
+// =====================================================================
+$main.addEventListener('click', e => {
+  const t = e.target.closest('button');
+  if (!t) return;
+  if (t.dataset.case) { menuCase = t.dataset.case; return showMenu(); }
+  // 單字
+  if (t.dataset.group) { group = t.dataset.group; return showWords(); }
+  if (t.dataset.wfilter) { wfilter = t.dataset.wfilter; return showWords(); }
+  if (t.dataset.qrange) { qrange = t.dataset.qrange; return showWords(); }
+  if (t.dataset.word) { window.scrollTo(0, 0); return showWordLearn(t.dataset.word); }
+  if (t.dataset.wquiz) { window.scrollTo(0, 0); return startWordQuiz(t.dataset.wquiz); }
+  if (t.dataset.choice) return wordChoose(t);
+  if (t.dataset.qakind) { window.scrollTo(0, 0); return startQA(t.dataset.qakind); }
+  if (t.dataset.qa) return qaPick(t);
+  if (t.dataset.qaw) return fillPick(t);
+  switch (t.dataset.act) {
+    case 'wmenu': return showWords();
+    case 'wback0': location.href = backUrl(false); return;
+    case 'wback1': location.href = backUrl(true); return;
+    case 'wspeak': return sayFull(wl.x);
+    case 'wspell': return spell(wl.w);
+    case 'wstep1': wl.step = 1; wl.k = 0; return wordStep();
+    case 'wclear': return wl.board.clear();
+    case 'whint': return wl.board.setGuide('trace');
+    case 'wdone': return wordDone();
+    case 'wagain': clearTimeout(window.backTimer); wl.step = 0; wl.k = 0; return wordStep();
+    case 'wqspeak': return wordQSpeak();
+    case 'wqclear': return wq.board.clear();
+    case 'wqdone': return wordQDone();
+    case 'ex-say': return sayEn(exOf(wl.w).e);
+    case 'qa-q': return sayEn(exOf(qa.list[qa.i].w).q, 0, personOf(qa.list[qa.i].w));
+    case 'qa-a': return sayEn(exOf(qa.list[qa.i].w).a, 0, answererOf(qa.list[qa.i].w));
+    case 'qa-e': return sayEn(exOf(qa.list[qa.i].w).e);
+    case 'qa-next': return qaNext();
+  }
+  if (t.dataset.learn) { window.scrollTo(0, 0); return showLearn(t.dataset.learn); }
+  if (t.dataset.quiz) { window.scrollTo(0, 0); return startQuiz(t.dataset.quiz); }
+  const act = t.dataset.act;
+  if (act === 'menu') return showMenu();
+  if (act === 'clear') return (lesson && lesson.board.svg.isConnected ? lesson.board : quiz.board).clear();
+  if (act === 'replay') { lesson.board.clear(); return lesson.board.animate(); }
+  if (act === 'speak') return sayLetter(lesson.ch);
+  if (act === 'next-step') { lesson.board.stopAnimation(); lesson.step = 1; return runStep(); }
+  if (act === 'done') return learnDone();
+  if (act === 'hint') { lesson.board.setGuide('trace'); return; }
+  if (act === 'again') { lesson.step = 0; return runStep(); }
+  if (act === 'qspeak') return speakQuestion();
+  if (act === 'qdone') return quizDone();
+});
+
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+  tab = b.dataset.tab;
+  document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('on', x === b));
+  window.scrollTo(0, 0);
+  tab === 'words' ? showWords() : showMenu();
+}));
+wprog.load().then(() => {
+  if (!BACK || !WORDS.some(x => x.w === BACK.word)) return;
+  tab = 'words'; group = BACK.word[0].toLowerCase();
+  document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('on', x.dataset.tab === 'words'));
+  showWordLearn(BACK.word);
+});
+showMenu();
+
+if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js');
+</script>
+<script src="music.js" data-style="calm"></script>
+</body>
+</html>
