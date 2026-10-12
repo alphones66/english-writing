@@ -253,8 +253,26 @@ const NS = 'http://www.w3.org/2000/svg';
 const $main = document.getElementById('main');
 // 從「每日 15 字」跳過來：?word=a&back=gept15.html&day=1&i=0 → 直接練這個單字的寫字，寫好或不寫都可以回去
 const QP = new URLSearchParams(location.search);
-const BACK = QP.get('back') === 'gept15.html' && QP.get('word') ? { word: QP.get('word'), day: +QP.get('day') || 1, i: +QP.get('i') || 0 } : null;
-const backUrl = wrote => `gept15.html?resume=cards&day=${BACK.day}&i=${BACK.i}&wrote=${wrote ? 1 : 0}`;
+const BACK_TARGET = QP.get('back');
+const BACK_RETURN_URL = (() => {
+  if (BACK_TARGET === 'gept15.html') return null;
+  try {
+    const url = new URL(BACK_TARGET);
+    return url.origin === 'https://alphones66.github.io' && url.pathname === '/gept15-practice/' ? url.href : null;
+  } catch (_) {
+    return null;
+  }
+})();
+const BACK = (BACK_TARGET === 'gept15.html' || BACK_RETURN_URL) && QP.get('word')
+  ? { word: QP.get('word'), day: +QP.get('day') || 1, i: +QP.get('i') || 0 }
+  : null;
+const backUrl = wrote => {
+  const query = `resume=cards&day=${BACK.day}&i=${BACK.i}&wrote=${wrote ? 1 : 0}`;
+  if (!BACK_RETURN_URL) return `gept15.html?${query}`;
+  const url = new URL(BACK_RETURN_URL);
+  url.search = query;
+  return url.href;
+};
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const caseName = ch => (ch === ch.toUpperCase() ? '大寫' : '小寫');
