@@ -1,4 +1,4 @@
-const CACHE = 'english-writing-v3';
+const CACHE = 'english-writing-v4';
 const FILES = [
   './',
   'index.html',
